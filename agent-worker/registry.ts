@@ -51,13 +51,14 @@ export function createAgent(
   apiKey: string,
   apiSecret: string,
   ollamaUrl?: string,
-  ollamaModel?: string
+  ollamaModel?: string,
+  enableAudio: boolean = false
 ): BaseAgent | null {
   const profile = getProfile(agentId);
   if (!profile) return null;
 
   const brain = new OllamaBrain(ollamaUrl, ollamaModel);
-  return new BaseAgent(profile, liveKitUrl, apiKey, apiSecret, brain);
+  return new BaseAgent(profile, liveKitUrl, apiKey, apiSecret, brain, enableAudio);
 }
 
 export function registerProfile(profile: AgentProfile): void {

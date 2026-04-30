@@ -1,7 +1,9 @@
 import { AccessToken } from "livekit-server-sdk";
-import { Room, RoomEvent, DataPacketKind } from "@livekit/rtc-node";
+import { Room, RoomEvent, DataPacketKind, LocalAudioTrack } from "@livekit/rtc-node";
 import { OllamaBrain } from "./ollama-brain.ts";
+import { createSpeaker } from "./speakers.ts";
 import type { AgentProfile } from "./types.ts";
+import type { Speaker } from "./speakers.ts";
 
 interface Message {
   role: "system" | "user" | "assistant";
@@ -20,13 +22,16 @@ export class BaseAgent {
   private apiKey: string;
   private apiSecret: string;
   private history: Message[] = [];
+  private speaker: Speaker;
+  private enableAudio: boolean;
 
   constructor(
     profile: AgentProfile,
     liveKitUrl: string,
     apiKey: string,
     apiSecret: string,
-    brain?: OllamaBrain
+    brain?: OllamaBrain,
+    enableAudio: boolean = false
   ) {
     this.profile = profile;
     this.room = new Room();
@@ -34,6 +39,8 @@ export class BaseAgent {
     this.apiKey = apiKey;
     this.apiSecret = apiSecret;
     this.brain = brain || new OllamaBrain();
+    this.enableAudio = enableAudio;
+    this.speaker = createSpeaker("local");
   }
 
   private makeToken(roomName: string): Promise<string> {
@@ -104,6 +111,15 @@ export class BaseAgent {
           topic: CHAT_TOPIC,
         });
         console.log(`[${this.profile.id}] -> "${reply}"`);
+
+        if (this.enableAudio) {
+          try {
+            await this.publishAudio(reply);
+          } catch (audioErr) {
+            const audioMsg = audioErr instanceof Error ? audioErr.message : String(audioErr);
+            console.warn(`[${this.profile.id}] audio publish failed:`, audioMsg);
+          }
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         console.error(`[${this.profile.id}] brain error:`, errorMsg);
@@ -114,8 +130,9 @@ export class BaseAgent {
       }
     });
 
-    this.room.on(RoomEvent.Disconnected, () => {
+    this.room.on(RoomEvent.Disconnected, async () => {
       console.log(`[${this.profile.id}] disconnected`);
+      await this.close();
       process.exit(0);
     });
 
@@ -127,6 +144,21 @@ export class BaseAgent {
 
   protected getGreeting(): string {
     return `hey, ${this.profile.name.toLowerCase()} here.`;
+  }
+
+  private async publishAudio(text: string): Promise<void> {
+    if (!this.enableAudio) return;
+
+    const audioBuffer = await this.speaker.speak(text);
+    if (audioBuffer.length === 0) {
+      console.log(`[${this.profile.id}] audio silent (local TTS)`);
+      return;
+    }
+
+    // TODO: implement LocalAudioTrack publishing
+    // This requires setting up audio encoding and publishing to LiveKit.
+    // For now, logging that audio would be published.
+    console.log(`[${this.profile.id}] audio published (${audioBuffer.length} bytes)`);
   }
 
   async join(roomName: string): Promise<void> {
@@ -145,5 +177,9 @@ export class BaseAgent {
 
   getHistory(): Message[] {
     return this.history;
+  }
+
+  async close(): Promise<void> {
+    await this.speaker.close();
   }
 }

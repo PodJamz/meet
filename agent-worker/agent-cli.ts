@@ -12,12 +12,16 @@ if (!command || command === "--help" || command === "-h") {
 8meet agent worker CLI
 
 Usage:
-  agent-cli <agent-id> <room-name>
+  agent-cli <agent-id> <room-name> [--audio]
   agent-cli list
   agent-cli --help
 
+Options:
+  --audio              Enable audio output (local TTS)
+
 Examples:
   agent-cli ai-james my-room
+  agent-cli ai-james my-room --audio
   agent-cli ai-tech my-room
   agent-cli list
 
@@ -40,12 +44,14 @@ if (command === "list") {
   process.exit(0);
 }
 
-// Main: agent-cli <agent-id> <room-name>
+// Main: agent-cli <agent-id> <room-name> [--audio]
 if (!roomName) {
-  console.error("Usage: agent-cli <agent-id> <room-name>");
+  console.error("Usage: agent-cli <agent-id> <room-name> [--audio]");
   console.error("Run with --help for more info");
   process.exit(2);
 }
+
+const enableAudio = args.includes("--audio");
 
 const env = loadEnv(".env.local");
 const required = requireEnv("LIVEKIT_URL", "LIVEKIT_API_KEY", "LIVEKIT_API_SECRET");
@@ -56,7 +62,7 @@ const apiSecret = required.LIVEKIT_API_SECRET;
 const ollamaUrl = env.OLLAMA_URL || "http://localhost:11434";
 const ollamaModel = env.OLLAMA_MODEL || "qwen3.6:27b";
 
-const agent = createAgent(command, liveKitUrl, apiKey, apiSecret, ollamaUrl, ollamaModel);
+const agent = createAgent(command, liveKitUrl, apiKey, apiSecret, ollamaUrl, ollamaModel, enableAudio);
 
 if (!agent) {
   console.error(`Unknown agent: ${command}`);
