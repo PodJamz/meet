@@ -10,13 +10,17 @@
     "lint:fix": "next lint --fix",
     "test": "vitest run",
     "format:check": "prettier --check \"**/*.{ts,tsx,md,json}\"",
-    "format:write": "prettier --write \"**/*.{ts,tsx,md,json}\""
+    "format:write": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "agent": "node --import tsx agent-worker/agent-cli.ts",
+    "agent:james": "node agent-worker/agent-james.mjs",
+    "agent:list": "node --import tsx agent-worker/agent-cli.ts list"
   },
   "dependencies": {
     "@datadog/browser-logs": "^5.23.3",
     "@livekit/components-react": "2.9.16",
     "@livekit/components-styles": "1.2.0",
     "@livekit/krisp-noise-filter": "0.3.4",
+    "@livekit/rtc-node": "^0.13.27",
     "@livekit/track-processors": "^0.6.0",
     "livekit-client": "2.16.0",
     "livekit-server-sdk": "2.14.2",
@@ -34,6 +38,7 @@
     "eslint-config-next": "15.5.6",
     "prettier": "3.7.3",
     "source-map-loader": "^5.0.0",
+    "tsx": "^4.7.0",
     "typescript": "5.9.3",
     "vitest": "^3.2.4"
   },
